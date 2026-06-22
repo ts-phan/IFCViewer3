@@ -324,8 +324,7 @@
         {
             "imports": {
                 "three": "./lib/three.module.js",
-                "three/": "./lib/three/",
-                "web-ifc": "./lib/web-ifc-api-browser.js",
+                "three/examples/jsm/": "./lib/three/examples/jsm/",
                 "web-ifc-viewer": "./lib/bundle.js"
             }
         }
@@ -428,7 +427,7 @@
         const container = document.getElementById('viewer-container');
         const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
         viewer.grid.setGrid();
-        viewer.IFC.setWasmPath('../../IFCViewer/');
+        viewer.IFC.setWasmPath('./lib/');
 
         let listeDefauts = [];
         let donneeTemp = null; 
