@@ -204,8 +204,15 @@
             font-size: 0.6em; font-weight: bold; padding: 1px 5px;
             border-radius: 20px; white-space: nowrap; flex-shrink: 0;
         }
-        .badge-type.Issue   { background: #cfe2ff; color: #084298; }
-        .badge-type.Warning { background: #fff3cd; color: #856404; }
+        .badge-type.Issue        { background: #cfe2ff; color: #084298; }
+        .badge-type.Warning      { background: #fff3cd; color: #856404; }
+        .badge-type.Architecte   { background: #e8d5f5; color: #6a1b9a; }
+        .badge-type.Voie         { background: #d4edda; color: #155724; }
+        .badge-type.GC           { background: #ffd8b1; color: #7a3900; }
+        .badge-type.SIG          { background: #d1ecf1; color: #0c5460; }
+        .badge-type.LAC          { background: #f8d7da; color: #721c24; }
+        .badge-type.Paysage      { background: #c8f5d0; color: #1a5c2a; }
+        .badge-type.Station      { background: #e2e3e5; color: #383d41; }
         .defaut-date {
             font-size: 0.63em; color: #888;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -251,6 +258,8 @@
             #top-action-bar      { top: calc(constant(safe-area-inset-top) + 10px); }
             #top-bar             { top: calc(constant(safe-area-inset-top) + 58px); }
             #btn-reset-view      { top: calc(constant(safe-area-inset-top) + 58px); }
+            #btn-plan-view       { top: calc(constant(safe-area-inset-top) + 10px); }
+            #plan-controls       { top: calc(constant(safe-area-inset-top) + 56px); }
         }
         #modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -273,6 +282,42 @@
         
         .header-media { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         #img-voir { width: 100%; max-height: 250px; object-fit: contain; border-radius: 6px; margin-bottom: 10px; background: #f8f9fa; border: 1px solid #eee; }
+
+        /* ── Vue en plan ── */
+        #btn-plan-view {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            right: 58px; z-index: 15;
+            background: rgba(255,255,255,0.95); border: none; border-radius: 8px;
+            height: 38px; padding: 0 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 0.8em; font-weight: bold; cursor: pointer;
+            display: none; align-items: center; gap: 5px;
+            transition: background 0.15s;
+        }
+        #btn-plan-view.active { background: #007bff; color: white; }
+        #btn-plan-view:active { filter: brightness(0.9); }
+
+        #plan-controls {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 56px);
+            right: 10px; z-index: 15;
+            background: rgba(255,255,255,0.97);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            padding: 10px 14px;
+            display: none;
+            flex-direction: column; gap: 8px;
+            min-width: 180px;
+        }
+        #plan-controls.visible { display: flex; }
+        .plan-ctrl-label { font-size: 0.7em; font-weight: 700; color: #555; text-transform: uppercase; }
+        #plan-height-slider { width: 100%; }
+        #plan-height-value { font-size: 0.75em; color: #007bff; font-weight: bold; text-align: center; }
+        #btn-exit-plan {
+            background: #dc3545; color: white; border: none; border-radius: 6px;
+            padding: 6px; font-size: 0.75em; font-weight: bold; cursor: pointer;
+        }
     </style>
 
     <script type="importmap">
@@ -310,6 +355,13 @@
         <div id="status-bar">👈 Cliquez ici pour choisir une maquette</div>
     </div>
     <button id="btn-reset-view" title="Vue globale">🏠</button>
+    <button id="btn-plan-view" title="Vue en plan">🗺️ Vue en plan</button>
+    <div id="plan-controls">
+        <div class="plan-ctrl-label">Hauteur de coupe</div>
+        <input type="range" id="plan-height-slider" min="0" max="50" step="0.1" value="1.2">
+        <div id="plan-height-value">1.20 m</div>
+        <button id="btn-exit-plan">✖ Quitter la vue en plan</button>
+    </div>
 
     <div id="bottom-sheet">
         <div id="liste-container"></div>
@@ -336,7 +388,17 @@
         <label style="font-size:0.85em; font-weight:bold;">Titre & Type</label>
         <div style="display:flex; gap:10px;">
             <input type="text" id="titre-defaut" placeholder="Ex: Fissure..." style="flex:2;">
-            <select id="type-defaut" style="flex:1;"><option value="Issue">Issue</option><option value="Warning">Alerte</option></select>
+            <select id="type-defaut" style="flex:1;">
+                <option value="Issue">🔵 Issue</option>
+                <option value="Warning">⚠️ Alerte</option>
+                <option value="Architecte">🟣 Architecte</option>
+                <option value="Voie">🟢 Voie</option>
+                <option value="GC">🟠 GC</option>
+                <option value="SIG">🔷 SIG</option>
+                <option value="LAC">🔴 LAC</option>
+                <option value="Paysage">🌿 Paysage</option>
+                <option value="Station">⬜ Station</option>
+            </select>
         </div>
         
         <label style="font-size:0.85em; font-weight:bold;">Description</label>
@@ -360,7 +422,7 @@
     <div id="viewer-container"></div>
 
     <script type="module">
-        import { Color, Mesh, SphereGeometry, MeshBasicMaterial, Vector3 } from 'three';
+        import { Color, Mesh, SphereGeometry, MeshBasicMaterial, Vector3, Plane } from 'three';
         import { IfcViewerAPI } from 'web-ifc-viewer';
 
         const container = document.getElementById('viewer-container');
@@ -373,7 +435,35 @@
         let idEditionEnCours = null; 
         let homeView = null; 
 
-        const materiauMarqueur = new MeshBasicMaterial({ color: 0xdc3545 });
+        // ── Couleurs par type ──
+        const TYPE_COLORS = {
+            Issue:      0x084298,
+            Warning:    0xffc107,
+            Architecte: 0x9c27b0,
+            Voie:       0x28a745,
+            GC:         0xff8c00,
+            SIG:        0x17a2b8,
+            LAC:        0xdc3545,
+            Paysage:    0x2e7d32,
+            Station:    0x6c757d,
+        };
+        const TYPE_LABELS = {
+            Issue:      '🔵 Issue',
+            Warning:    '⚠️ Alerte',
+            Architecte: '🟣 Architecte',
+            Voie:       '🟢 Voie',
+            GC:         '🟠 GC',
+            SIG:        '🔷 SIG',
+            LAC:        '🔴 LAC',
+            Paysage:    '🌿 Paysage',
+            Station:    '⬜ Station',
+        };
+
+        function getMateriau(type) {
+            const color = TYPE_COLORS[type] ?? TYPE_COLORS.Issue;
+            return new MeshBasicMaterial({ color });
+        }
+
         const geometrieMarqueur = new SphereGeometry(0.25, 16, 16);
 
         // --- PERSISTANCE localStorage ---
@@ -408,7 +498,7 @@
         function recreerMarqueurs() {
             listeDefauts.forEach(def => {
                 if (def.x !== undefined && !isNaN(def.x) && !def.mesh3D) {
-                    const marqueur = new Mesh(geometrieMarqueur, materiauMarqueur);
+                    const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
                     marqueur.position.set(def.x, def.y, def.z);
                     viewer.context.getScene().add(marqueur);
                     def.mesh3D = marqueur;
@@ -535,6 +625,7 @@
                 camControls.getPosition(p); camControls.getTarget(t);
                 homeView = { position: p, target: t };
                 document.getElementById('btn-reset-view').style.display = 'flex';
+                document.getElementById('btn-plan-view').style.display = 'flex';
                 document.body.classList.add('menu-closed');
 
                 afficherStatut("⏳ Chargement des annotations BCF...");
@@ -602,7 +693,7 @@
                     Object.values(defautsParGuid).forEach(def => {
                         if (def.titre) {
                             if (def.x !== undefined && !isNaN(def.x)) {
-                                const marqueur = new Mesh(geometrieMarqueur, materiauMarqueur);
+                                const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
                                 marqueur.position.set(def.x, def.y, def.z);
                                 viewer.context.getScene().add(marqueur);
                                 def.mesh3D = marqueur;
@@ -646,6 +737,7 @@
                 camControls.getTarget(t);
                 homeView = { position: p, target: t };
                 document.getElementById('btn-reset-view').style.display = 'flex';
+                document.getElementById('btn-plan-view').style.display = 'flex';
 
                 // Fermer le drawer latéral
                 document.body.classList.add('menu-closed');
@@ -726,7 +818,7 @@
                 Object.values(defautsParGuid).forEach(def => {
                     if(def.titre) {
                         if (def.x !== undefined && !isNaN(def.x)) {
-                            const marqueur = new Mesh(geometrieMarqueur, materiauMarqueur);
+                            const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
                             marqueur.position.set(def.x, def.y, def.z);
                             viewer.context.getScene().add(marqueur);
                             def.mesh3D = marqueur;
@@ -806,6 +898,10 @@
                     defToEdit.desc = descVal;
                     defToEdit.type = typeVal;
                     if(imgVal.length > 100) defToEdit.image = imgVal;
+                    // Mettre à jour la couleur du marqueur 3D
+                    if (defToEdit.mesh3D) {
+                        defToEdit.mesh3D.material = getMateriau(typeVal);
+                    }
                 }
             } else {
                 if (!donneeTemp) return;
@@ -813,7 +909,7 @@
                 donneeTemp.desc = descVal;
                 donneeTemp.type = typeVal;
 
-                const marqueur = new Mesh(geometrieMarqueur, materiauMarqueur);
+                const marqueur = new Mesh(geometrieMarqueur, getMateriau(typeVal || "Issue"));
                 marqueur.position.set(donneeTemp.x, donneeTemp.y, donneeTemp.z);
                 viewer.context.getScene().add(marqueur);
                 
@@ -857,8 +953,8 @@
                 const descSansDate = isDateLine ? descLines.slice(1).join('\n').trim() : def.desc || "";
                 const descAffichee = descSansDate && descSansDate !== '-' ? descSansDate : '—';
 
-                const badgeClass = def.type === 'Warning' ? 'Warning' : 'Issue';
-                const badgeLabel = def.type === 'Warning' ? '⚠️ Alerte' : '🔵 Issue';
+                const badgeClass = def.type || 'Issue';
+                const badgeLabel = TYPE_LABELS[def.type] || ('🔵 ' + (def.type || 'Issue'));
 
                 const imgHtml = def.image
                     ? `<img class="defaut-img-min" src="${def.image}">`
@@ -984,6 +1080,88 @@
             link.download = `Audit_${nomProjet.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0,10)}.bcfzip`;
             link.click();
         }
+
+        // ── VUE EN PLAN ──
+        let planViewActive = false;
+        let planClipPlane = null;
+        const btnPlanView = document.getElementById('btn-plan-view');
+        const planControls = document.getElementById('plan-controls');
+        const planHeightSlider = document.getElementById('plan-height-slider');
+        const planHeightValue = document.getElementById('plan-height-value');
+        const btnExitPlan = document.getElementById('btn-exit-plan');
+
+        function activerVueEnPlan(hauteur) {
+            try {
+                // 1. Caméra orthographique (vue plate, pas de perspective)
+                const cam = viewer.context.ifcCamera;
+                if (!planViewActive) {
+                    cam.toggleProjection(); // passe en ortho
+                }
+                // 2. Positionner la caméra au-dessus, regardant vers le bas
+                cam.cameraControls.setLookAt(0, 100, 0, 0, 0, 0, true);
+
+                // 3. Coupe horizontale à la hauteur choisie
+                const renderer = viewer.context.getRenderer();
+                // Retirer l'ancienne coupe si elle existe
+                if (planClipPlane) {
+                    renderer.clippingPlanes = [];
+                    planClipPlane = null;
+                }
+                // Plan de coupe horizontal (normal vers le bas) à Y = hauteur
+                planClipPlane = new Plane(new Vector3(0, -1, 0), hauteur);
+                renderer.clippingPlanes = [planClipPlane];
+                renderer.localClippingEnabled = true;
+
+                planViewActive = true;
+                btnPlanView.classList.add('active');
+                btnPlanView.innerHTML = '🗺️ Vue en plan ✓';
+                planControls.classList.add('visible');
+                afficherStatut(`🗺️ Vue en plan — coupe à ${hauteur.toFixed(2)} m`, 4000);
+            } catch(e) { console.warn('Vue en plan :', e); }
+        }
+
+        function quitterVueEnPlan() {
+            try {
+                const cam = viewer.context.ifcCamera;
+                if (planViewActive) {
+                    cam.toggleProjection(); // repasse en perspective
+                }
+                // Supprimer la coupe
+                const renderer = viewer.context.getRenderer();
+                renderer.clippingPlanes = [];
+                renderer.localClippingEnabled = false;
+                planClipPlane = null;
+                planViewActive = false;
+                btnPlanView.classList.remove('active');
+                btnPlanView.innerHTML = '🗺️ Vue en plan';
+                planControls.classList.remove('visible');
+                // Revenir à la vue d'accueil
+                if (homeView) {
+                    cam.cameraControls.setLookAt(
+                        homeView.position.x, homeView.position.y, homeView.position.z,
+                        homeView.target.x, homeView.target.y, homeView.target.z, true
+                    );
+                }
+                afficherStatut('↩️ Retour vue 3D', 3000);
+            } catch(e) { console.warn('Quitter vue en plan :', e); }
+        }
+
+        btnPlanView.addEventListener('click', () => {
+            if (planViewActive) {
+                quitterVueEnPlan();
+            } else {
+                const h = parseFloat(planHeightSlider.value);
+                activerVueEnPlan(h);
+            }
+        });
+
+        planHeightSlider.addEventListener('input', () => {
+            const h = parseFloat(planHeightSlider.value);
+            planHeightValue.textContent = h.toFixed(2) + ' m';
+            if (planViewActive) activerVueEnPlan(h);
+        });
+
+        btnExitPlan.addEventListener('click', quitterVueEnPlan);
 
         document.getElementById('btn-exporter-bcf-drawer').addEventListener('click', exporterBCF);
 
