@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Visionneuse BIM & Audit BCF</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="./lib/jszip.min.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; font-family: '-apple-system', 'Segoe UI', sans-serif; background-color: #f0f0f0; }
@@ -323,10 +323,10 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://esm.sh/three@0.135.0",
-                "three/": "https://esm.sh/three@0.135.0/",
-                "web-ifc": "https://esm.sh/web-ifc@0.0.36?env=browser",
-                "web-ifc-viewer": "https://esm.sh/web-ifc-viewer@1.0.218?external=three,web-ifc&env=browser"
+                "three": "./lib/three.module.js",
+                "three/": "./lib/three/",
+                "web-ifc": "./lib/web-ifc-api-browser.js",
+                "web-ifc-viewer": "./lib/bundle.js"
             }
         }
     </script>
@@ -428,7 +428,7 @@
         const container = document.getElementById('viewer-container');
         const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
         viewer.grid.setGrid();
-        viewer.IFC.setWasmPath('../../IFCViewer/');
+        viewer.IFC.setWasmPath('./lib/');
 
         let listeDefauts = [];
         let donneeTemp = null; 
