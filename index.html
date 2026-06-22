@@ -428,7 +428,7 @@
         const container = document.getElementById('viewer-container');
         const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
         viewer.grid.setGrid();
-        viewer.IFC.setWasmPath('./libs/');
+        viewer.IFC.setWasmPath('../../IFCViewer/');
 
         let listeDefauts = [];
         let donneeTemp = null; 
