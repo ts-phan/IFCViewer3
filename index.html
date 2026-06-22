@@ -366,7 +366,7 @@
         const container = document.getElementById('viewer-container');
         const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
         viewer.grid.setGrid();
-        //viewer.IFC.setWasmPath('../../IFCViewer3/');
+        viewer.IFC.setWasmPath('../../IFCViewer3/');
 
         let listeDefauts = [];
         let donneeTemp = null; 
